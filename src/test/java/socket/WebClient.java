@@ -3,43 +3,44 @@ package socket;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+
+
 public class WebClient {
     private Client client;
-    private WebClient(){
 
+    private WebClient() {
     }
-    public static WebClient getInstance(){
+    public static WebClient getInstance() {
         return new WebClient();
     }
-    public void connectToSocket(SocketContext context) {
-        boolean isBodySend = false;
+    public void connectToSocket(SocketContext context){
+        boolean isBodySent = false;
+        boolean isRunnableSent = false;
         try {
             client = new Client(context);
-            if (!context.getRequestHeaders().isEmpty()) {
+            if (!context.getRequestHeaders().isEmpty()) { //добавляем хэдеры из контекста в подключение к вебсокету
                 final Map<String, String> requestHeaderParams = context.getRequestHeaders();
                 requestHeaderParams.forEach((key, value) -> {
                     client.addHeader(key, value);
                 });
             }
-            client.connectBlocking();
-            while (!client.isClosed()) {
-                if (client.getAliveTime() >= context.getTimeOut()) {
-                    client.close(1006, "Time Out");
+            client.connectBlocking(); //подключаемся к вебсокету до тех пор пока не будет ошибка или сообщение любое
+            while (!client.isClosed()) { //пока сообщение активно
+                if (client.getAliveTime() >= context.getTimeOut()) { //если общее время подключения сокета превышает таймаут
+                    client.close(1006, "Time Out"); //закрываем сокет и завершаем поток
                 }
-                if (context.getRunnable() != null) {
+                if (context.getRunnable() != null && !isRunnableSent) { //если есть запускаемая задача, то она запускается
                     context.getRunnable().run();
+                    isRunnableSent = true;
                 }
-                if (context.getBody() != null && isBodySend) {
+                if (context.getBody() != null && !isBodySent) { //есть есть тело, которое нужно отправить, то отправляем
                     client.send(context.getBody());
-                    isBodySend = true;
-                }
-                if (context.getExpectedMessage() != null) {
-                    client.onMessage(context.getExpectedMessage());
-                    return;
+                    isBodySent = true;
                 }
             }
-        } catch (URISyntaxException | InterruptedException e){
+        } catch (URISyntaxException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+
     }
 }

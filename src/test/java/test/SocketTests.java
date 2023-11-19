@@ -2,17 +2,15 @@ package test;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.path.json.JsonPath;
-import model.SocketMessageModel;
+import models.SocketMessageModel;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import socket.SocketContext;
-import model.SubscribeModel;
+import models.SubscribeModel;
 import socket.WebClient;
 import java.util.Random;
 
@@ -23,7 +21,7 @@ import static com.codeborne.selenide.Selenide.open;
 public class SocketTests {
     private SocketContext context;
 
-    private String getRandomId(){
+    private String getRandomStringId(){
         int leftLimit = 97;   // letter 'a'
         int rightLimit = 122; // letter 'z'
         int targetStringLenght = 7;
@@ -40,8 +38,7 @@ public class SocketTests {
                 .response().jsonPath();
         String token = response.getString("data.token");
         String socketBaseEndpoint = response.getString("data.instanceServers[0].endpoint");
-        return socketBaseEndpoint + "?token=" + token + "&connectId=" + getRandomId();
-
+        return socketBaseEndpoint + "?token=" + token + "&connectId=" + getRandomStringId();
     }
 
     @Test
@@ -73,7 +70,7 @@ public class SocketTests {
         String url = input.getValue();
         button.click();
 
-        Runnable sendUIMessage = new Runnable() {
+        Runnable sendUIMessage = new Runnable() { //запускаемый объект который будет запущен во время взаимодействия с вебсокетом
             @Override
             public void run() {
                 input.clear();
@@ -94,11 +91,14 @@ public class SocketTests {
     public void socketKucoin() throws JsonProcessingException {
 
         SubscribeModel subscribeModel = new SubscribeModel();
+
         subscribeModel.setId(Math.abs(new Random().nextInt()));
         subscribeModel.setResponse(true);
         subscribeModel.setType("subscribe");
         subscribeModel.setTopic("/market/ticker:BTC-USDT");
         subscribeModel.setPrivateChannel(false);
+
+
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(subscribeModel);
 
@@ -108,8 +108,11 @@ public class SocketTests {
         context.setURI(getSocketConnectionUrl());
         WebClient.getInstance().connectToSocket(context);
 
-        String firstNormalMessage = context.getMessageList().stream().filter(x->x.contains("\"type\":\"message\""))
-                .findFirst().orElseThrow(()-> new RuntimeException("No normal message found"));
+        String firstNormalMessage = context.getMessageList()
+                .stream().filter(x -> x.contains("\"type\":\"message\""))
+                .findFirst().orElseThrow(() -> new RuntimeException("No normal message found"));
+
+
         SocketMessageModel messageOne = objectMapper.readValue(firstNormalMessage, SocketMessageModel.class);
 
         String lastNormalMessage = context.getMessageList().get(context.getMessageList().size()-1);
