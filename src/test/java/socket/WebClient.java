@@ -23,7 +23,7 @@ public class WebClient {
             }
             client.connectBlocking();
             while (!client.isClosed()) {
-                if (client.getAlliveTime() >= context.getTimeOut()) {
+                if (client.getAliveTime() >= context.getTimeOut()) {
                     client.close(1006, "Time Out");
                 }
                 if (context.getRunnable() != null) {

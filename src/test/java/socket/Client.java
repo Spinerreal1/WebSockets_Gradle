@@ -41,8 +41,8 @@ public class Client extends WebSocketClient{
 
     }
 
-    public int getAlliveTime(){
-        Date closeDate = new Date;
+    public int getAliveTime(){
+        Date closeDate = new Date();
         int timeInSeconds = (int) (closeDate.getTime() - openedTime.getTime()) / 1000;
         context.setTimeTaken(timeInSeconds);
         return timeInSeconds;
